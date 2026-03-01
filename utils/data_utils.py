@@ -7,7 +7,8 @@ import streamlit as st
 
 @st.cache_data
 def get_all_data():
-    ##### 2025 DATA ENDS IN OCTOBER years = range(1990, 2026)
+    ##### 2025 DATA ENDS IN OCTOBER 
+    years = range(1990, 2026)
     files = [f"T100-{year}.csv" for year in years]
     df_list = [pd.read_csv(file) for file in files]
     T100_full = pd.concat(df_list, axis=0, ignore_index=True)
