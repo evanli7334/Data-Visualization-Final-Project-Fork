@@ -33,17 +33,6 @@ def render_story_page():
     import warnings
     warnings.simplefilter(action='ignore', category=FutureWarning)
 
-    title = alt.Chart(full_airport_map).mark_text(
-        fontSize=30,
-        fontWeight='bold',   
-        font='sans-serif',    
-        align='center',
-        baseline='middle',
-    ).encode(
-        text=alt.value('US-International Travel: Passenger Trends by Foreign Country')
-    ).properties(
-        height=50)
-
     #create years selection and country selection
     Years = sorted(pax_by_country['Year'].unique().tolist())
     Years_Options = [None] + Years 
@@ -283,9 +272,7 @@ def render_story_page():
         height=120)
 
     #display
-    chart = (
-     title & 
-     years_bar_chart & 
+    chart = (years_bar_chart & 
      country_change_chart & 
      scatterplot_title &
      scatterplot & 
