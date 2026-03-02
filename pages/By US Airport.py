@@ -176,7 +176,7 @@ def render_airport_page():
         alt.datum.rank <= 5
     ).properties(
         width=350, height=450, 
-        title = 'Top 5 Airlines by International Passengers', anchor='middle')
+        title = 'Top 5 Airlines by International Passengers')
 
     #create bar graph showing top destinations
     unique_cities = full_airport_map['NON_US_CITY_NAME'].unique().tolist()
@@ -206,7 +206,7 @@ def render_airport_page():
         alt.datum.rank <= 5
     ).properties(
         width=350, height=450, 
-        title = 'Top 5 Foreign Destinations', anchor='middle')
+        title = 'Top 5 Foreign Destinations')
 
     map_chart = (background + circles).project(type='albersUsa')
 
