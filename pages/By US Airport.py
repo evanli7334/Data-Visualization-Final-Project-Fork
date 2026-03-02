@@ -153,7 +153,7 @@ def render_airport_page():
     bar_graph_top_airlines = alt.Chart(full_airport_map).mark_bar().encode(
         y=alt.Y('sum_passengers:Q', title='Sum of International Passengers'),
         x=alt.X('CARRIER_NAME:N', title='Airline Name', sort='-y', 
-                axis=alt.Axis(labelAngle=-45)),
+                axis=alt.Axis(labelAngle=-45, labelOverlap=False)),
         color=alt.Color('CARRIER_NAME:N', 
             scale=alt.Scale(
                 domain=unique_airlines,
@@ -176,14 +176,17 @@ def render_airport_page():
         alt.datum.rank <= 5
     ).properties(
         width=350, height=450, 
-        title = 'Top 5 Airlines by International Passengers')
+        title=alt.TitleParams(
+            text='Top 5 Airlines by International Passenger Volume',
+            anchor='middle',
+            fontSize=16))
 
     #create bar graph showing top destinations
     unique_cities = full_airport_map['NON_US_CITY_NAME'].unique().tolist()
     bar_graph_top_destinations = alt.Chart(full_airport_map).mark_bar().encode(
         y=alt.Y('sum_passengers:Q', title='Sum of Passengers'),
         x=alt.X('NON_US_CITY_NAME:N', title='Foreign City', sort='-y', 
-                axis=alt.Axis(labelAngle=-45)),
+                axis=alt.Axis(labelAngle=-45, labelOverlap=False)),
         color=alt.Color('NON_US_CITY_NAME:N', 
             scale=alt.Scale(
                 domain=unique_cities,  
@@ -206,7 +209,10 @@ def render_airport_page():
         alt.datum.rank <= 5
     ).properties(
         width=350, height=450, 
-        title = 'Top 5 Foreign Destinations')
+        title=alt.TitleParams(
+            text='Top 5 Foreign Destinations',
+            anchor='middle',
+            fontSize=16))
 
     map_chart = (background + circles).project(type='albersUsa')
 
