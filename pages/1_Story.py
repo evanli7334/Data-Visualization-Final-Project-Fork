@@ -206,7 +206,7 @@ def render_story_page():
     ).transform_calculate(
         label="(isValid(year_selection.Year) && country_selection['Country Name']) ? "
               "country_selection['Country Name'] + ' ' + year_selection.Year + ' Summary Statistics' : ''").properties(
-        #width=1000,
+        width=800,
         height=50 
     ).add_params(
         selection_year, 
@@ -236,7 +236,7 @@ def render_story_page():
             alt.Tooltip('carrier_name:N', title='Carrier'),
             alt.Tooltip('passenger_count:Q', title='Passengers', format=',.0f')]
     ).properties(
-        width=450,
+        width=370,
         height=450,
         title="Top 5 Carriers")
 
@@ -263,7 +263,7 @@ def render_story_page():
             alt.Tooltip('route_name:N', title='Nondirectional Route'),
             alt.Tooltip('passenger_count:Q', title='Passengers', format=',.0f')]
     ).properties(
-        width=450,
+        width=370,
         height=450,
         title="Top 5 Nondirectional Nonstop Routes")
 
