@@ -5,16 +5,11 @@ import pandas as pd
 from vega_datasets import data
 from utils.data_utils import get_all_data
 
+st.title("US-International Travel: Passenger Trends by US Gateway Airports (1990-2025)")
 def render_airport_page():
     pax_by_country, pax_by_airport, us_airport_map, new_data = get_all_data()
 
     alt.data_transformers.disable_max_rows()
-
-    title = alt.Chart(us_airport_map).mark_text(
-        fontSize=30, fontWeight='bold', align='center', baseline='middle',).encode(
-        text=alt.value('US-International Travel: Passenger Trends by US Gateway Airports')
-    ).properties(#width=1000, 
-                 height=50)
 
     #Create year and airport selections
     full_airport_map = pd.concat([us_airport_map, new_data], ignore_index=True)
@@ -78,8 +73,8 @@ def render_airport_page():
         height=500,
         title=alt.TitleParams(
             text="US Airports By Annual International Passengers - Volume Map",
-            subtitle="Select year through dropdown menu at the bottom. Click an airport to view passenger trends by airport by year, top airlines, and top foreign destinations.",
-            fontSize=20,
+            subtitle=["Select year through dropdown menu at the bottom.", 
+            "Click an airport to view passenger trends, top airlines, and top foreign destinations."],
             subtitleFontSize=14,
             subtitleColor='gray',
             anchor='middle' ))
@@ -217,8 +212,7 @@ def render_airport_page():
 
     spacer = alt.Chart(pd.DataFrame({'x': [0]})).mark_point(opacity=0).properties(height=50)
 
-    dashboard = (title & 
-                 years_bar_chart & 
+    dashboard = (years_bar_chart & 
                  map_chart & 
                  airport_label_block & 
                  line_graph_by_airport & 
