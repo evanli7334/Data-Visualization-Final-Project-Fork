@@ -6,7 +6,7 @@ st.markdown("""
     <style>
     /* Target the main container */
     .block-container {
-        max-width: 1200px;
+        max-width: 800px;
         padding-top: 2rem;
         margin-left: auto;
         margin-right: auto;
@@ -236,7 +236,7 @@ def render_story_page():
             alt.Tooltip('carrier_name:N', title='Carrier'),
             alt.Tooltip('passenger_count:Q', title='Passengers', format=',.0f')]
     ).properties(
-        #width=450,
+        width=450,
         height=450,
         title="Top 5 Carriers")
 
@@ -263,7 +263,7 @@ def render_story_page():
             alt.Tooltip('route_name:N', title='Nondirectional Route'),
             alt.Tooltip('passenger_count:Q', title='Passengers', format=',.0f')]
     ).properties(
-        #width=450,
+        width=450,
         height=450,
         title="Top 5 Nondirectional Nonstop Routes")
 
@@ -273,7 +273,7 @@ def render_story_page():
         opacity=0             
     ).encode(
     ).properties(
-        #width=400,
+        width=400,
         height=120)
 
     #display
