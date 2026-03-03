@@ -165,7 +165,8 @@ def render_geopolitical_page():
     # ---------------------------
     PRE_YEAR = 2019
     POST_YEAR = 2024
-
+    st.write("Available years:", sorted(country_year["YEAR"].unique())[-10:])
+    
     cy_19_24 = (
         country_year[country_year["YEAR"].isin([PRE_YEAR, POST_YEAR])]
         .pivot_table(index="foreign_country", columns="YEAR", values="passengers", aggfunc="sum")
