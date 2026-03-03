@@ -7,47 +7,48 @@ from utils.data_utils import get_all_data
 st.title("Geopolitical shocks: country-level collapses and post-COVID movers")
 
 def render_geopolitical_page():
-pax_by_country, pax_by_airport, us_airport_map, new_data = get_all_data()
+    pax_by_country, pax_by_airport, us_airport_map, new_data = get_all_data()
 
-# --- DEBUG ONCE: show what columns exist ---
-st.write("pax_by_country columns:", list(pax_by_country.columns))
-st.write("pax_by_country head:", pax_by_country.head())
+    alt.data_transformers.disable_max_rows()
 
-# --- Normalize column names (safe) ---
-df = pax_by_country.copy()
-df.columns = [c.strip() for c in df.columns]
+    # --- DEBUG ONCE: show what columns exist ---
+    st.write("pax_by_country columns:", list(pax_by_country.columns))
+    st.write("pax_by_country head:", pax_by_country.head())
 
-# Candidate mappings: pick the first column that exists
-year_col_candidates = ["YEAR", "Year", "year"]
-country_col_candidates = ["foreign_country", "FOREIGN_COUNTRY", "COUNTRY", "DEST_COUNTRY_NAME", "ORIGIN_COUNTRY_NAME"]
-pax_col_candidates = ["PASSENGERS", "passengers", "PAX", "TOTAL_PASSENGERS"]
+    # --- Normalize column names (safe) ---
+    df = pax_by_country.copy()
+    df.columns = [c.strip() for c in df.columns]
 
-def first_existing(cands):
-    for c in cands:
-        if c in df.columns:
-            return c
-    return None
+    year_col_candidates = ["YEAR", "Year", "year"]
+    country_col_candidates = ["foreign_country", "FOREIGN_COUNTRY", "COUNTRY", "DEST_COUNTRY_NAME", "ORIGIN_COUNTRY_NAME"]
+    pax_col_candidates = ["PASSENGERS", "passengers", "PAX", "TOTAL_PASSENGERS"]
 
-YEAR_COL = first_existing(year_col_candidates)
-COUNTRY_COL = first_existing(country_col_candidates)
-PAX_COL = first_existing(pax_col_candidates)
+    def first_existing(cands):
+        for c in cands:
+            if c in df.columns:
+                return c
+        return None
 
-if YEAR_COL is None or COUNTRY_COL is None or PAX_COL is None:
-    st.error(f"Missing expected columns. Found YEAR={YEAR_COL}, COUNTRY={COUNTRY_COL}, PAX={PAX_COL}")
-    st.stop()
+    YEAR_COL = first_existing(year_col_candidates)
+    COUNTRY_COL = first_existing(country_col_candidates)
+    PAX_COL = first_existing(pax_col_candidates)
 
-# Standardize names to what the rest of the page expects
-df = df.rename(columns={YEAR_COL: "YEAR", COUNTRY_COL: "foreign_country", PAX_COL: "PASSENGERS"})
+    if YEAR_COL is None or COUNTRY_COL is None or PAX_COL is None:
+        st.error(f"Missing expected columns. Found YEAR={YEAR_COL}, COUNTRY={COUNTRY_COL}, PAX={PAX_COL}")
+        st.stop()
 
-# Now your original logic will work
-country_year = (
-    df.groupby(["YEAR", "foreign_country"], as_index=False)
-      .agg(passengers=("PASSENGERS", "sum"))
-)
+    # Standardize names to what the rest of the page expects
+    df = df.rename(columns={YEAR_COL: "YEAR", COUNTRY_COL: "foreign_country", PAX_COL: "PASSENGERS"})
+
+    # Build country_year + global_year
+    country_year = (
+        df.groupby(["YEAR", "foreign_country"], as_index=False)
+          .agg(passengers=("PASSENGERS", "sum"))
+    )
 
     global_year = (
         country_year.groupby("YEAR", as_index=False)
-        .agg(total_passengers=("passengers", "sum"))
+                    .agg(total_passengers=("passengers", "sum"))
     )
 
     # ---- Timeline ----
@@ -57,7 +58,11 @@ country_year = (
         x=alt.X("YEAR:Q", title="Year", axis=alt.Axis(format="d")),
         y=alt.Y("total_passengers:Q", title="Total international passengers"),
         tooltip=["YEAR:Q", alt.Tooltip("total_passengers:Q", format=",.0f")]
-    ).properties(width=850, height=260, title="International passengers to/from the U.S. (1990–2025)")
+    ).properties(
+        width=850,
+        height=260,
+        title="International passengers to/from the U.S. (1990–2025)"
+    )
 
     markers = alt.Chart(events).mark_rule(strokeDash=[6, 4]).encode(
         x="YEAR:Q",
@@ -82,14 +87,19 @@ country_year = (
             country_year[country_year["YEAR"] == e["post"]][["foreign_country", "passengers"]]
             .rename(columns={"passengers": "passengers_post"})
         )
+
         merged = pre.merge(post, on="foreign_country", how="outer").fillna(0)
         merged["event"] = e["event"]
         merged["pre_year"] = e["pre"]
         merged["post_year"] = e["post"]
+
         merged["abs_change"] = merged["passengers_post"] - merged["passengers_pre"]
         merged["pct_change"] = np.where(
-            merged["passengers_pre"] > 0, merged["abs_change"] / merged["passengers_pre"], np.nan
+            merged["passengers_pre"] > 0,
+            merged["abs_change"] / merged["passengers_pre"],
+            np.nan
         )
+
         shocks_list.append(merged)
 
     shocks = pd.concat(shocks_list, ignore_index=True)
@@ -161,7 +171,9 @@ country_year = (
 
     cy_19_24["abs_change"] = cy_19_24["passengers_post"] - cy_19_24["passengers_pre"]
     cy_19_24["pct_change"] = np.where(
-        cy_19_24["passengers_pre"] > 0, cy_19_24["abs_change"] / cy_19_24["passengers_pre"], np.nan
+        cy_19_24["passengers_pre"] > 0,
+        cy_19_24["abs_change"] / cy_19_24["passengers_pre"],
+        np.nan
     )
     cy_19_24["pct_change_pct"] = 100 * cy_19_24["pct_change"]
 
