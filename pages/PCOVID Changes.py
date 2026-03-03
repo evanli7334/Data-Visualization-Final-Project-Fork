@@ -7,40 +7,29 @@ from utils.data_utils import get_all_data
 st.title("Geopolitical shocks: country-level collapses and post-COVID movers")
 
 def render_geopolitical_page():
+
     pax_by_country, pax_by_airport, us_airport_map, new_data = get_all_data()
 
     alt.data_transformers.disable_max_rows()
 
-    # --- DEBUG ONCE: show what columns exist ---
-    st.write("pax_by_country columns:", list(pax_by_country.columns))
-    st.write("pax_by_country head:", pax_by_country.head())
-
-    # --- Normalize column names (safe) ---
+    # ---------------------------
+    # Normalize to expected names
+    # ---------------------------
     df = pax_by_country.copy()
     df.columns = [c.strip() for c in df.columns]
 
-    year_col_candidates = ["YEAR", "Year", "year"]
-    country_col_candidates = ["foreign_country", "FOREIGN_COUNTRY", "COUNTRY", "DEST_COUNTRY_NAME", "ORIGIN_COUNTRY_NAME"]
-    pax_col_candidates = ["PASSENGERS", "passengers", "PAX", "TOTAL_PASSENGERS"]
+    df = df.rename(columns={
+        "Country Name": "foreign_country",
+        "YEAR": "YEAR",
+        "PASSENGERS": "PASSENGERS"
+    })
 
-    def first_existing(cands):
-        for c in cands:
-            if c in df.columns:
-                return c
-        return None
-
-    YEAR_COL = first_existing(year_col_candidates)
-    COUNTRY_COL = first_existing(country_col_candidates)
-    PAX_COL = first_existing(pax_col_candidates)
-
-    if YEAR_COL is None or COUNTRY_COL is None or PAX_COL is None:
-        st.error(f"Missing expected columns. Found YEAR={YEAR_COL}, COUNTRY={COUNTRY_COL}, PAX={PAX_COL}")
+    required = {"YEAR", "foreign_country", "PASSENGERS"}
+    missing = required - set(df.columns)
+    if missing:
+        st.error(f"Missing required columns in pax_by_country: {missing}")
         st.stop()
 
-    # Standardize names to what the rest of the page expects
-    df = df.rename(columns={YEAR_COL: "YEAR", COUNTRY_COL: "foreign_country", PAX_COL: "PASSENGERS"})
-
-    # Build country_year + global_year
     country_year = (
         df.groupby(["YEAR", "foreign_country"], as_index=False)
           .agg(passengers=("PASSENGERS", "sum"))
@@ -51,8 +40,13 @@ def render_geopolitical_page():
                     .agg(total_passengers=("passengers", "sum"))
     )
 
-    # ---- Timeline ----
-    events = pd.DataFrame({"YEAR": [2001, 2020], "event": ["9/11", "COVID"]})
+    # ---------------------------
+    # Timeline
+    # ---------------------------
+    events = pd.DataFrame({
+        "YEAR": [2001, 2020],
+        "event": ["9/11", "COVID"]
+    })
 
     timeline = alt.Chart(global_year).mark_line().encode(
         x=alt.X("YEAR:Q", title="Year", axis=alt.Axis(format="d")),
@@ -71,29 +65,37 @@ def render_geopolitical_page():
 
     st.altair_chart(timeline + markers, use_container_width=True)
 
-    # ---- Shocks (collapse-only bars) ----
+    # ---------------------------
+    # Shock collapses
+    # ---------------------------
     event_windows = [
         {"event": "9/11", "pre": 2000, "post": 2002},
         {"event": "COVID", "pre": 2019, "post": 2020},
     ]
 
     shocks_list = []
+
     for e in event_windows:
         pre = (
-            country_year[country_year["YEAR"] == e["pre"]][["foreign_country", "passengers"]]
+            country_year[country_year["YEAR"] == e["pre"]]
+            [["foreign_country", "passengers"]]
             .rename(columns={"passengers": "passengers_pre"})
         )
+
         post = (
-            country_year[country_year["YEAR"] == e["post"]][["foreign_country", "passengers"]]
+            country_year[country_year["YEAR"] == e["post"]]
+            [["foreign_country", "passengers"]]
             .rename(columns={"passengers": "passengers_post"})
         )
 
         merged = pre.merge(post, on="foreign_country", how="outer").fillna(0)
+
         merged["event"] = e["event"]
         merged["pre_year"] = e["pre"]
         merged["post_year"] = e["post"]
 
         merged["abs_change"] = merged["passengers_post"] - merged["passengers_pre"]
+
         merged["pct_change"] = np.where(
             merged["passengers_pre"] > 0,
             merged["abs_change"] / merged["passengers_pre"],
@@ -104,7 +106,8 @@ def render_geopolitical_page():
 
     shocks = pd.concat(shocks_list, ignore_index=True)
 
-    shock_events = sorted([e for e in shocks["event"].unique() if "recovery" not in e.lower()])
+    shock_events = sorted(shocks["event"].unique())
+
     event_param = alt.param(
         name="Event",
         value="COVID",
@@ -133,8 +136,8 @@ def render_geopolitical_page():
             x=alt.X(
                 "foreign_country:N",
                 sort=alt.SortField("loss_mag", order="descending"),
-                title=None,
-                axis=alt.Axis(labelAngle=90)
+                axis=alt.Axis(labelAngle=90),
+                title=None
             ),
             y=alt.Y(
                 "loss_mag:Q",
@@ -143,20 +146,25 @@ def render_geopolitical_page():
             ),
             tooltip=[
                 "foreign_country:N",
-                "pre_year:Q",
-                "post_year:Q",
                 alt.Tooltip("passengers_pre:Q", format=",.0f"),
                 alt.Tooltip("passengers_post:Q", format=",.0f"),
-                alt.Tooltip("pct_change_pct:Q", format=".1f")
-            ],
+                alt.Tooltip("pct_change_pct:Q", format=".1f"),
+            ]
         )
-        .properties(width=950, height=450, title="Largest country-level collapses during major shocks")
+        .properties(
+            width=950,
+            height=450,
+            title="Largest country-level collapses during major shocks"
+        )
     )
 
     st.altair_chart(bars_down, use_container_width=True)
 
-    # ---- Post-COVID movers (2019 -> 2024), countries on X ----
-    PRE_YEAR, POST_YEAR = 2019, 2024
+    # ---------------------------
+    # Post-COVID movers (2019 → 2024)
+    # ---------------------------
+    PRE_YEAR = 2019
+    POST_YEAR = 2024
 
     cy_19_24 = (
         country_year[country_year["YEAR"].isin([PRE_YEAR, POST_YEAR])]
@@ -166,19 +174,22 @@ def render_geopolitical_page():
         .fillna(0)
     )
 
-    BASELINE_MIN_POSTCOVID = 50_000
-    cy_19_24 = cy_19_24[cy_19_24["passengers_pre"] >= BASELINE_MIN_POSTCOVID].copy()
-
     cy_19_24["abs_change"] = cy_19_24["passengers_post"] - cy_19_24["passengers_pre"]
+
     cy_19_24["pct_change"] = np.where(
         cy_19_24["passengers_pre"] > 0,
         cy_19_24["abs_change"] / cy_19_24["passengers_pre"],
         np.nan
     )
+
     cy_19_24["pct_change_pct"] = 100 * cy_19_24["pct_change"]
+
+    BASELINE_MIN_POSTCOVID = 50_000
+    cy_19_24 = cy_19_24[cy_19_24["passengers_pre"] >= BASELINE_MIN_POSTCOVID]
 
     top_inc_pct = cy_19_24.nlargest(5, "pct_change")
     top_dec_pct = cy_19_24.nsmallest(5, "pct_change")
+
     top10_pct = pd.concat([top_dec_pct, top_inc_pct], ignore_index=True)
 
     pct_chart = (
@@ -188,22 +199,31 @@ def render_geopolitical_page():
             x=alt.X(
                 "foreign_country:N",
                 sort=alt.SortField("pct_change_pct", order="ascending"),
-                title=None,
-                axis=alt.Axis(labelAngle=45)
+                axis=alt.Axis(labelAngle=45),
+                title=None
             ),
-            y=alt.Y("pct_change_pct:Q", title="Percent change (2019 → 2024)"),
+            y=alt.Y(
+                "pct_change_pct:Q",
+                title="Percent change (2019 → 2024)"
+            ),
             tooltip=[
                 "foreign_country:N",
                 alt.Tooltip("passengers_pre:Q", title="2019 passengers", format=",.0f"),
                 alt.Tooltip("passengers_post:Q", title="2024 passengers", format=",.0f"),
-                alt.Tooltip("abs_change:Q", title="Abs change", format=",.0f"),
-                alt.Tooltip("pct_change_pct:Q", title="% change", format=".1f"),
+                alt.Tooltip("abs_change:Q", format=",.0f"),
+                alt.Tooltip("pct_change_pct:Q", format=".1f"),
             ]
         )
-        .properties(width=950, height=450, title="Top post-COVID movers by percent change (2019 → 2024)")
+        .properties(
+            width=950,
+            height=450,
+            title="Top post-COVID movers by percent change (2019 → 2024)"
+        )
     )
 
-    pct_zero = alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(strokeDash=[4, 4]).encode(y="y:Q")
-    st.altair_chart(pct_chart + pct_zero, use_container_width=True)
+    zero_line = alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(strokeDash=[4, 4]).encode(y="y:Q")
+
+    st.altair_chart(pct_chart + zero_line, use_container_width=True)
+
 
 render_geopolitical_page()
