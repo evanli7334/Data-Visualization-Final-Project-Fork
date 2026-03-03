@@ -54,7 +54,7 @@ def render_geopolitical_page():
         y=alt.Y("total_passengers:Q", title="Total international passengers"),
         tooltip=["YEAR:Q", alt.Tooltip("total_passengers:Q", format=",.0f")]
     ).properties(
-        width=850,
+        width=800,
         height=260,
         title="International passengers to/from the U.S. (1990–2025)"
     )
@@ -64,7 +64,7 @@ def render_geopolitical_page():
         tooltip=["event:N", "YEAR:Q"]
     )
 
-    st.altair_chart(timeline + markers, use_container_width=True)
+    st.altair_chart(timeline + markers, use_container_width=False)
 
     # ---------------------------
     # Shock collapses
@@ -153,13 +153,13 @@ def render_geopolitical_page():
             ]
         )
         .properties(
-            width=950,
+            width=800,
             height=450,
             title="Largest country-level collapses during major shocks"
         )
     )
 
-    st.altair_chart(bars_down, use_container_width=True)
+    st.altair_chart(bars_down, use_container_width=False)
 
     # ---------------------------
     # Post-COVID movers (2019 → 2024)
@@ -216,7 +216,7 @@ def render_geopolitical_page():
             ]
         )
         .properties(
-            width=950,
+            width=800,
             height=450,
             title="Top post-COVID movers by percent change (2019 → 2024)"
         )
@@ -224,7 +224,7 @@ def render_geopolitical_page():
 
     zero_line = alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(strokeDash=[4, 4]).encode(y="y:Q")
 
-    st.altair_chart(pct_chart + zero_line, use_container_width=True)
+    st.altair_chart(pct_chart + zero_line, use_container_width=False)
 
     # ---------------------------
     # Post-COVID movers by magnitude (2019 → 2024)
@@ -256,7 +256,7 @@ def render_geopolitical_page():
             ]
         )
         .properties(
-            width=950,
+            width=800,
             height=450,
             title="Top post-COVID movers by magnitude (2019 → 2024)"
         )
@@ -264,7 +264,7 @@ def render_geopolitical_page():
 
     abs_zero = alt.Chart(pd.DataFrame({"y": [0]})).mark_rule(strokeDash=[4, 4]).encode(y="y:Q")
 
-    st.altair_chart(abs_chart + abs_zero, use_container_width=True)
+    st.altair_chart(abs_chart + abs_zero, use_container_width=False)
 
 
 render_geopolitical_page()
