@@ -7,16 +7,43 @@ from utils.data_utils import get_all_data
 st.title("Geopolitical shocks: country-level collapses and post-COVID movers")
 
 def render_geopolitical_page():
-    pax_by_country, pax_by_airport, us_airport_map, new_data = get_all_data()
+pax_by_country, pax_by_airport, us_airport_map, new_data = get_all_data()
 
-    alt.data_transformers.disable_max_rows()
+# --- DEBUG ONCE: show what columns exist ---
+st.write("pax_by_country columns:", list(pax_by_country.columns))
+st.write("pax_by_country head:", pax_by_country.head())
 
-    # ---- Build country_year in your naming convention ----
-    # Adjust these column names if pax_by_country differs in your pipeline
-    country_year = (
-        pax_by_country.groupby(["YEAR", "foreign_country"], as_index=False)
-        .agg(passengers=("PASSENGERS", "sum"))
-    )
+# --- Normalize column names (safe) ---
+df = pax_by_country.copy()
+df.columns = [c.strip() for c in df.columns]
+
+# Candidate mappings: pick the first column that exists
+year_col_candidates = ["YEAR", "Year", "year"]
+country_col_candidates = ["foreign_country", "FOREIGN_COUNTRY", "COUNTRY", "DEST_COUNTRY_NAME", "ORIGIN_COUNTRY_NAME"]
+pax_col_candidates = ["PASSENGERS", "passengers", "PAX", "TOTAL_PASSENGERS"]
+
+def first_existing(cands):
+    for c in cands:
+        if c in df.columns:
+            return c
+    return None
+
+YEAR_COL = first_existing(year_col_candidates)
+COUNTRY_COL = first_existing(country_col_candidates)
+PAX_COL = first_existing(pax_col_candidates)
+
+if YEAR_COL is None or COUNTRY_COL is None or PAX_COL is None:
+    st.error(f"Missing expected columns. Found YEAR={YEAR_COL}, COUNTRY={COUNTRY_COL}, PAX={PAX_COL}")
+    st.stop()
+
+# Standardize names to what the rest of the page expects
+df = df.rename(columns={YEAR_COL: "YEAR", COUNTRY_COL: "foreign_country", PAX_COL: "PASSENGERS"})
+
+# Now your original logic will work
+country_year = (
+    df.groupby(["YEAR", "foreign_country"], as_index=False)
+      .agg(passengers=("PASSENGERS", "sum"))
+)
 
     global_year = (
         country_year.groupby("YEAR", as_index=False)
