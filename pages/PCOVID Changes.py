@@ -34,7 +34,8 @@ def render_geopolitical_page():
         df.groupby(["YEAR", "foreign_country"], as_index=False)
           .agg(passengers=("PASSENGERS", "sum"))
     )
-
+    country_year["YEAR"] = pd.to_numeric(country_year["YEAR"], errors="coerce").astype("Int64")
+    
     global_year = (
         country_year.groupby("YEAR", as_index=False)
                     .agg(total_passengers=("passengers", "sum"))
@@ -165,7 +166,6 @@ def render_geopolitical_page():
     # ---------------------------
     PRE_YEAR = 2019
     POST_YEAR = 2024
-    st.write("Available years:", sorted(country_year["YEAR"].unique())[-10:])
     
     cy_19_24 = (
         country_year[country_year["YEAR"].isin([PRE_YEAR, POST_YEAR])]
